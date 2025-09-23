@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<leap.droidcord.ui.Message xmlns:android="http://schemas.android.com/apk/res/android"
+<leap.droidcord.widget.Message xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="fill_parent"
     android:layout_height="wrap_content"
@@ -9,7 +9,7 @@
     android:paddingLeft="4dp"
     android:paddingRight="4dp"
     android:paddingTop="2dp"
-    tools:context="leap.droidcord.ui.Message">
+    tools:context="leap.droidcord.widget.Message">
 
     <LinearLayout
         android:id="@+id/msg_reply"
@@ -102,6 +102,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearance"/>
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/msg_attachments"></LinearLayout>
+
         </LinearLayout>
     </LinearLayout>
 
@@ -125,4 +132,4 @@
             android:textAppearance="?android:attr/textAppearanceSmall"/>
     </LinearLayout>
 
-</leap.droidcord.ui.Message>
+</leap.droidcord.widget.Message>

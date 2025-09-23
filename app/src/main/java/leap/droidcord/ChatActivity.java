@@ -3,8 +3,6 @@ package leap.droidcord;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
@@ -12,11 +10,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import leap.droidcord.ui.MessageListAdapter;
 
 public class ChatActivity extends Activity {
-
     int page;
     long before;
     long after;
@@ -34,49 +30,41 @@ public class ChatActivity extends Activity {
         s = MainActivity.s;
         context = this;
         s.channelIsOpen = true;
-        setTitle(s.selectedChannel.toString());
 
         s.messagesView = (ListView) findViewById(R.id.messages);
         mMsgComposer = (EditText) findViewById(R.id.msg_composer);
         mMsgSend = (Button) findViewById(R.id.msg_send);
 
-        mMsgComposer.setHint(getResources().getString(
-                R.string.msg_composer_hint, s.selectedChannel.toString()));
-
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        final Handler handler = new Handler(Looper.getMainLooper());
+        if (s.isDM) {
+            setTitle("@" + s.selectedDm.toString());
+            mMsgComposer.setHint(getResources().getString(
+                    R.string.msg_composer_hint, "@" + s.selectedDm.toString()));
+        } else {
+            setTitle(s.selectedChannel.toString());
+            mMsgComposer.setHint(getResources().getString(
+                    R.string.msg_composer_hint, s.selectedChannel.toString()));
+        }
 
         showProgress(true);
-        executor.execute(new Runnable() {
-            @Override
-            public void run() {
-                new HTTPThread(s, HTTPThread.FETCH_MESSAGES).run();
-                s.messagesAdapter = new MessageListAdapter(context, s,
-                        s.messages);
 
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        showProgress(false);
-                        s.messagesView.setAdapter(s.messagesAdapter);
-                    }
-                });
-            }
+        s.api.aFetchMessages(0, 0, () -> {
+            s.messagesAdapter = new MessageListAdapter(context, s, s.messages);
+            s.runOnUiThread(() -> {
+                s.messagesView.setAdapter(s.messagesAdapter);
+                showProgress(false);
+            });
         });
 
-        mMsgSend.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    s.sendMessage = mMsgComposer.getText().toString();
-                    s.sendReference = 0;
-                    s.sendPing = false;
-                    new HTTPThread(s, HTTPThread.SEND_MESSAGE).start();
-                    mMsgComposer.setText("");
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    s.error(e.toString());
-                }
+        mMsgSend.setOnClickListener((View v) -> {
+            try {
+                s.sendMessage = mMsgComposer.getText().toString();
+                s.sendReference = 0;
+                s.sendPing = false;
+                s.api.aSendMessage(null);
+                mMsgComposer.setText("");
+            } catch (Exception e) {
+                s.error("Error sending mesage: " + e.getMessage());
+                e.printStackTrace();
             }
         });
     }

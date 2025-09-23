@@ -18,7 +18,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
- */
+*/
 package cc.nnproject.json;
 
 import java.util.Hashtable;
@@ -26,14 +26,8 @@ import java.util.Vector;
 
 /**
  * JSON Library compatible with CLDC 1.1 & JDK 1.1<br>
- * Usage:
- * <p>
- * <code>JSONObject obj = JSON.getObject(str);</code>
- * </p>
- * <b>Use with proguard argument</b>:
- * <p>
- * <code>-optimizations !code/simplification/object</code>
- * 
+ * Usage:<p><code>JSONObject obj = JSON.getObject(str);</code></p>
+ * <b>Use with proguard argument</b>: <p><code>-optimizations !code/simplification/object</code>
  * @author Shinovon
  * @version 2.2
  */
@@ -41,16 +35,16 @@ public final class JSON {
 
 	// parse all nested elements once
 	static final boolean parse_members = false;
-
+	
 	// identation for formatting
 	static final String FORMAT_TAB = "  ";
-
+	
 	// used for storing nulls, get methods must return real null
 	public static final Object json_null = new Object();
-
+	
 	public static final Boolean TRUE = new Boolean(true);
 	public static final Boolean FALSE = new Boolean(false);
-
+	
 	public static AbstractJSON get(String text) throws JSONException {
 		if (text == null || text.length() <= 1)
 			throw new JSONException("Empty text");
@@ -93,11 +87,11 @@ public final class JSON {
 		char first = str.charAt(0);
 		int length = str.length() - 1;
 		char last = str.charAt(length);
-		switch (first) {
+		switch(first) {
 		case '"': { // string
 			if (last != '"')
 				throw new JSONException("Unexpected end of text");
-			if (str.indexOf('\\') != -1) {
+			if(str.indexOf('\\') != -1) {
 				char[] chars = str.substring(1, length).toCharArray();
 				str = null;
 				int l = chars.length;
@@ -118,50 +112,42 @@ public final class JSON {
 									char c1 = chars[i + 1];
 									switch (c1) {
 									case 'u':
-										i += 2;
+										i+=2;
 										sb.append((char) Integer.parseInt(
-												new String(
-														new char[] {
-																chars[i++],
-																chars[i++],
-																chars[i++],
-																chars[i++] }),
+												new String(new char[] {chars[i++], chars[i++], chars[i++], chars[i++]}),
 												16));
 										break replace;
 									case 'x':
-										i += 2;
+										i+=2;
 										sb.append((char) Integer.parseInt(
-												new String(
-														new char[] {
-																chars[i++],
-																chars[i++] }),
+												new String(new char[] {chars[i++], chars[i++]}),
 												16));
 										break replace;
 									case 'n':
 										sb.append('\n');
-										i += 2;
+										i+=2;
 										break replace;
 									case 'r':
 										sb.append('\r');
-										i += 2;
+										i+=2;
 										break replace;
 									case 't':
 										sb.append('\t');
-										i += 2;
+										i+=2;
 										break replace;
 									case 'f':
 										sb.append('\f');
-										i += 2;
+										i+=2;
 										break replace;
 									case 'b':
 										sb.append('\b');
-										i += 2;
+										i+=2;
 										break replace;
 									case '\"':
 									case '\'':
 									case '\\':
 									case '/':
-										i += 2;
+										i+=2;
 										sb.append((char) c1);
 										break replace;
 									default:
@@ -196,18 +182,15 @@ public final class JSON {
 			char nextDelimiter = object ? ':' : ',';
 			boolean escape = false;
 			String key = null;
-			Object res = object ? (Object) new JSONObject()
-					: (Object) new JSONArray();
-
+			Object res = object ? (Object) new JSONObject() : (Object) new JSONArray();
+			
 			for (int splIndex; i < length; i = splIndex + 1) {
 				// skip all spaces
-				for (; i < length - 1 && str.charAt(i) <= ' '; i++)
-					;
+				for (; i < length - 1 && str.charAt(i) <= ' '; i++);
 
 				splIndex = i;
 				boolean quote = false;
-				for (; splIndex < length
-						&& (quote || brackets > 0 || str.charAt(splIndex) != nextDelimiter); splIndex++) {
+				for (; splIndex < length && (quote || brackets > 0 || str.charAt(splIndex) != nextDelimiter); splIndex++) {
 					char c = str.charAt(splIndex);
 					if (!escape) {
 						if (c == '\\') {
@@ -215,9 +198,8 @@ public final class JSON {
 						} else if (c == '"') {
 							quote = !quote;
 						}
-					} else
-						escape = false;
-
+					} else escape = false;
+	
 					if (!quote) {
 						if (c == '{' || c == '[') {
 							brackets++;
@@ -238,13 +220,11 @@ public final class JSON {
 					nextDelimiter = ',';
 				} else {
 					Object value = str.substring(i, splIndex).trim();
-					// don't check length because if value is empty, then
-					// exception is going to be thrown anyway
+					// don't check length because if value is empty, then exception is going to be thrown anyway
 					char c = ((String) value).charAt(0);
-					// leave JSONString as value to parse it later, if its
-					// object or array and nested parsing is disabled
-					value = parse_members || (c != '{' && c != '[') ? parseJSON((String) value)
-							: new JSONString((String) value);
+					// leave JSONString as value to parse it later, if its object or array and nested parsing is disabled
+					value = parse_members || (c != '{' && c != '[') ?
+							parseJSON((String) value) : new JSONString((String) value);
 					if (object) {
 						((JSONObject) res)._put(key, value);
 						key = null;
@@ -268,29 +248,23 @@ public final class JSON {
 					// hex
 					if (length > 1 && first == '0' && str.charAt(1) == 'x') {
 						if (length > 9) // str.length() > 10
-							return new Long(
-									Long.parseLong(str.substring(2), 16));
-						return new Integer(Integer.parseInt(str.substring(2),
-								16));
+							return new Long(Long.parseLong(str.substring(2), 16));
+						return new Integer(Integer.parseInt(str.substring(2), 16));
 					}
 					// decimal
-					if (str.indexOf('.') != -1 || str.indexOf('E') != -1
-							|| "-0".equals(str))
-						return new Double(Double.parseDouble(str));
-					if (first == '-')
-						length--;
-					if (length > 8) // (str.length() - (str.charAt(0) == '-' ? 1
-									// : 0)) >= 10
+					if (str.indexOf('.') != -1 || str.indexOf('E') != -1 || "-0".equals(str))
+						return new Integer(0);
+					if (first == '-') length--;
+					if (length > 8) // (str.length() - (str.charAt(0) == '-' ? 1 : 0)) >= 10
 						return new Long(Long.parseLong(str));
 					return new Integer(Integer.parseInt(str));
-				} catch (Exception e) {
-				}
+				} catch (Exception e) {}
 			}
 			throw new JSONException("Couldn't be parsed: " + str);
-			// return new JSONString(str);
+//			return new JSONString(str);
 		}
 	}
-
+	
 	public static boolean isNull(Object obj) {
 		return obj == json_null || obj == null;
 	}
@@ -339,21 +313,6 @@ public final class JSON {
 		return sb.toString();
 	}
 
-	static double getDouble(Object o) throws JSONException {
-		try {
-			if (o instanceof JSONString)
-				return Double.parseDouble(((JSONString) o).str);
-			if (o instanceof Integer)
-				return ((Integer) o).intValue();
-			if (o instanceof Long)
-				return ((Long) o).longValue();
-			if (o instanceof Double)
-				return ((Double) o).doubleValue();
-		} catch (Throwable e) {
-		}
-		throw new JSONException("Cast to double failed: " + o);
-	}
-
 	static int getInt(Object o) throws JSONException {
 		try {
 			if (o instanceof JSONString)
@@ -362,10 +321,7 @@ public final class JSON {
 				return ((Integer) o).intValue();
 			if (o instanceof Long)
 				return (int) ((Long) o).longValue();
-			if (o instanceof Double)
-				return ((Double) o).intValue();
-		} catch (Throwable e) {
-		}
+		} catch (Throwable e) {}
 		throw new JSONException("Cast to int failed: " + o);
 	}
 
@@ -377,10 +333,7 @@ public final class JSON {
 				return ((Integer) o).longValue();
 			if (o instanceof Long)
 				return ((Long) o).longValue();
-			if (o instanceof Double)
-				return ((Double) o).longValue();
-		} catch (Throwable e) {
-		}
+		} catch (Throwable e) {}
 		throw new JSONException("Cast to long failed: " + o);
 	}
 

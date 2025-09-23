@@ -1,10 +1,13 @@
-package leap.droidcord;
+package leap.droidcord.model;
 
 import java.util.Vector;
 
+import leap.droidcord.State;
+import leap.droidcord.model.Permissions.Overwrite;
+
+import cc.nnproject.json.JSON;
 import cc.nnproject.json.JSONArray;
 import cc.nnproject.json.JSONObject;
-import leap.droidcord.Permissions.Overwrite;
 
 public class Channel extends Snowflake {
     public String name;
@@ -16,7 +19,7 @@ public class Channel extends Snowflake {
         super(Long.parseLong(data.getString("id")));
         name = data.getString("name");
 
-		/*if (data.has("permission_overwrites")) {
+		if (data.has("permission_overwrites")) {
             overwrites = new Vector<Overwrite>();
 			JSONArray arr = data.getArray("permission_overwrites");
 
@@ -26,7 +29,7 @@ public class Channel extends Snowflake {
 					overwrites.addElement(new Overwrite(p));
 				}
 			}
-		}*/
+		}
         try {
             lastMessageID = Long.parseLong(data.getString("last_message_id"));
         } catch (Exception e) {
@@ -65,16 +68,9 @@ public class Channel extends Snowflake {
                     continue;
 
                 Channel channel = new Channel(ch);
-				/*GuildMember me;
-				try {
-					me = new GuildMember(s, g, JSON.getObject(s.http.get("/guilds/"
-							+ g.id + "/members/" + s.myUserId)));
-					if (channel.hasPermission(g, me, Permissions.VIEW_CHANNEL))*/
-                result.addElement(channel);
-				/*} catch (Exception e) {
-					//s.error(e.toString());
-					e.printStackTrace();
-				}*/
+
+				if (channel.hasPermission(g, g.me, Permissions.VIEW_CHANNEL))
+                    result.addElement(channel);
             }
         }
         return result;
@@ -112,7 +108,7 @@ public class Channel extends Snowflake {
         basePermissions |= allow;
 
         // Apply a member specific overwrite, if it exists.
-        Overwrite memberOverwrite = Overwrite.findBySnowflake(overwrites, member.user);
+        Overwrite memberOverwrite = Overwrite.findBySnowflake(overwrites, member);
         if (memberOverwrite != null) {
             basePermissions &= ~memberOverwrite.deny;
             basePermissions |= memberOverwrite.allow;

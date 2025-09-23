@@ -18,21 +18,20 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
- */
+*/
 package cc.nnproject.json;
 
 public class JSONException extends RuntimeException {
-
+	
 	public JSONException() {
 	}
-
+	
 	public JSONException(String msg) {
 		super(msg);
 	}
-
+	
 	public String toString() {
-		return getMessage() == null ? "JSONException" : "JSONException: "
-				+ getMessage();
+		return getMessage() == null ? "JSONException" : "JSONException: " + getMessage();
 	}
 
 }

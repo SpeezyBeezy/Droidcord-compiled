@@ -10,23 +10,24 @@ import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import org.json.JSONException;
+
 import cc.nnproject.json.JSON;
-import cc.nnproject.json.JSONException;
 import cc.nnproject.json.JSONObject;
 
-public class HTTPThing {
+public class HTTP {
     State s;
     String api;
-    String token;
+    public String token;
 
-    public HTTPThing(State s, String api, String token) {
+    public HTTP(State s, String api, String token) {
         this.s = s;
         this.api = api;
         this.token = token.trim();
     }
 
     private static byte[] readBytes(InputStream inputStream, int initialSize,
-                                    int bufferSize, int expandSize) throws IOException {
+            int bufferSize, int expandSize) throws IOException {
         if (initialSize <= 0)
             initialSize = bufferSize;
         byte[] buf = new byte[initialSize];
@@ -53,31 +54,21 @@ public class HTTPThing {
     public HttpURLConnection openConnection(String url) throws IOException {
         String fullUrl = api + "/api/v9" + url;
 
-        if (s.tokenType == State.TOKEN_TYPE_QUERY) {
-            if (fullUrl.indexOf("?") != -1) {
-                fullUrl += "&token=" + token;
-            } else {
-                fullUrl += "?token=" + token;
-            }
-        }
-
         HttpURLConnection c = (HttpURLConnection) new URL(fullUrl)
                 .openConnection();
         c.setDoOutput(true);
 
-        if (s.tokenType == State.TOKEN_TYPE_HEADER) {
-            c.addRequestProperty("Content-Type", "application/json");
-            c.addRequestProperty("Authorization", token);
-        }
+        c.addRequestProperty("Content-Type", "application/json");
+        c.addRequestProperty("Authorization", token);
 
         return c;
     }
 
     public String sendRequest(HttpURLConnection c) throws Exception {
-        c.setRequestMethod("GET");
-
         InputStream is = null;
-        is = c.getInputStream();
+        is = c.getErrorStream();
+        if (is == null)
+            is = c.getInputStream();
 
         try {
             int respCode = c.getResponseCode();
@@ -89,7 +80,6 @@ public class HTTPThing {
                 stringBuffer.append((char) ch);
             }
             String response = stringBuffer.toString().trim();
-
             if (respCode == HttpURLConnection.HTTP_OK) {
                 return response;
             }
@@ -98,7 +88,8 @@ public class HTTPThing {
             }
 
             try {
-                String message = JSON.getObject(response).getString("message");
+                JSONObject json = JSON.getObject(response);
+                String message = json.getString("message");
                 throw new Exception(message);
             } catch (JSONException e) {
                 throw new Exception("HTTP error " + respCode);
@@ -113,10 +104,17 @@ public class HTTPThing {
             throws Exception {
         HttpURLConnection c = null;
         OutputStream os = null;
-
         try {
             c = openConnection(url);
             c.setRequestMethod(method);
+
+            if (method.equals("GET")) {
+                c.setDoOutput(false);
+                c.setDoInput(true);
+            } else {
+                c.setDoOutput(true);
+                c.setDoInput(true);
+            }
 
             byte[] b;
             try {
@@ -125,10 +123,7 @@ public class HTTPThing {
                 b = data.getBytes();
             }
 
-            if (s.tokenType == State.TOKEN_TYPE_HEADER) {
-                c.setRequestProperty("Content-Length", String.valueOf(b.length));
-            }
-
+            c.setRequestProperty("Content-Length", String.valueOf(b.length));
             os = c.getOutputStream();
             os.write(b);
 
@@ -141,22 +136,15 @@ public class HTTPThing {
 
     private String sendJson(String method, String url, JSONObject data)
             throws Exception {
-        if (s.tokenType == State.TOKEN_TYPE_JSON)
-            data.put("token", token);
-        return sendData(method, url, data.build());
+        return sendData(method, url, data.toString());
     }
 
     public String get(String url) throws Exception {
-        if (s.tokenType == State.TOKEN_TYPE_JSON) {
-            JSONObject tokenJson = new JSONObject();
-            tokenJson.put("token", token);
-            return get(url, tokenJson);
-        }
-
         HttpURLConnection c = null;
-
         c = openConnection(url);
         c.setRequestMethod("GET");
+        c.setDoOutput(false);
+        c.setDoInput(true);
         return sendRequest(c);
     }
 
@@ -190,7 +178,9 @@ public class HTTPThing {
             if ((r = hc.getResponseCode()) >= 400) {
                 throw new IOException("HTTP " + r);
             }
-            in = hc.getInputStream();
+            in = hc.getErrorStream();
+            if (in == null)
+                in = hc.getInputStream();
             return readBytes(in, (int) hc.getContentLength(), 1024, 2048);
         } finally {
             if (in != null)
@@ -198,14 +188,13 @@ public class HTTPThing {
         }
     }
 
-    private HttpURLConnection open(String url) throws IOException {
-        HttpURLConnection hc = (HttpURLConnection) new URL(url)
-                .openConnection();
+    private HttpURLConnection open(String path) throws IOException {
+        URL url = new URL(path);
+        HttpURLConnection hc = (HttpURLConnection) url.openConnection();
+
         hc.setRequestMethod("GET");
-        if (s.tokenType == State.TOKEN_TYPE_HEADER) {
-            hc.setRequestProperty("User-Agent",
-                    "Mozilla/5.0 (X11; Linux x86_64; rv:125.0) Gecko/20100101 Firefox/125.0");
-        }
+        hc.setRequestProperty("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:125.0) Gecko/20100101 Firefox/125.0");
+
         return hc;
     }
 }

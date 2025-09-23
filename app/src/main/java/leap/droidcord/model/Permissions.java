@@ -1,4 +1,4 @@
-package leap.droidcord;
+package leap.droidcord.model;
 
 import java.util.Vector;
 
@@ -79,7 +79,7 @@ public class Permissions {
             return null;
         }
 
-        public Overwrite findBySnowflake(Vector<Overwrite> overwrites, long snowflake) {
+        public static Overwrite findBySnowflake(Vector<Overwrite> overwrites, long snowflake) {
             for (Overwrite overwrite : overwrites) {
                 if (overwrite.id == snowflake) {
                     return overwrite;

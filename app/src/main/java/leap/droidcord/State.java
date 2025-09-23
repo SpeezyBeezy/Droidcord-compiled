@@ -3,101 +3,124 @@ package leap.droidcord;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
 import android.widget.ListView;
 import android.widget.Toast;
 
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import leap.droidcord.data.API;
+import leap.droidcord.data.GuildInformation;
+import leap.droidcord.data.Icons;
+import leap.droidcord.data.Attachments;
+import leap.droidcord.data.Messages;
+import leap.droidcord.model.Channel;
+import leap.droidcord.model.DirectMessage;
+import leap.droidcord.model.Guild;
+import leap.droidcord.ui.MessageListAdapter;
+
+import cc.nnproject.json.JSON;
+import cc.nnproject.json.JSONObject;
 
 public class State {
-    static final int ICON_TYPE_NONE = 0;
-    static final int ICON_TYPE_SQUARE = 1;
-    static final int ICON_TYPE_CIRCLE = 2;
-    static final int ICON_TYPE_CIRCLE_HQ = 3;
+    public static final int ICON_TYPE_NONE = 0;
+    public static final int ICON_TYPE_SQUARE = 1;
+    public static final int ICON_TYPE_CIRCLE = 2;
+    public static final int ICON_TYPE_CIRCLE_HQ = 3;
 
-    static final int TOKEN_TYPE_HEADER = 0;
-    static final int TOKEN_TYPE_JSON = 1;
-    static final int TOKEN_TYPE_QUERY = 2;
+    public static final int TOKEN_TYPE_HEADER = 0;
+    public static final int TOKEN_TYPE_JSON = 1;
+    public static final int TOKEN_TYPE_QUERY = 2;
 
-    boolean use12hTime;
-    boolean useGateway;
-    int messageLoadCount;
-    boolean useJpeg;
-    int attachmentSize;
-    int iconType;
-    boolean autoReConnect;
-    boolean showMenuIcons;
-    int tokenType;
-    boolean useNameColors;
-    boolean showRefMessage;
+    public boolean use12hTime;
+    public boolean useGateway;
+    public int messageLoadCount;
+    public boolean useJpeg;
+    public int attachmentSize;
+    public int iconType;
+    public boolean autoReConnect;
+    public boolean showMenuIcons;
+    public int tokenType;
+    public boolean useNameColors;
+    public boolean showRefMessage;
 
-    Context c;
+    public Context c;
 
-    HTTPThing http;
-    GatewayThread gateway;
-    String cdn;
+    public HTTP http;
+    public API api;
+    public GatewayThread gateway;
+    public String cdn;
 
-    long myUserId;
-    boolean isLiteProxy;
+    public long myUserId;
+    public boolean isLiteProxy;
 
-    IconCache iconCache;
-    NameColorCache nameColorCache;
-    UnreadManager unreads;
+    public Icons icons;
+    public Attachments attachments;
+    public GuildInformation guildInformation;
+    public UnreadManager unreads;
 
-    Vector<Guild> guilds;
-    Guild selectedGuild;
-    // GuildSelector guildSelector;
-    Vector<Guild> subscribedGuilds;
+    public Vector<Guild> guilds;
+    public Guild selectedGuild;
+    public Vector<Guild> subscribedGuilds;
 
-    Vector<Channel> channels;
-    Channel selectedChannel;
-    // ChannelSelector channelSelector;
-    boolean channelIsOpen;
+    public Vector<Channel> channels;
+    public Channel selectedChannel;
+    public boolean channelIsOpen;
 
-    Vector<Message> messages;
-    Vector<String> typingUsers;
-    Vector<Long> typingUserIDs;
+    public Messages messages;
+    public Vector<String> typingUsers;
+    public Vector<Long> typingUserIDs;
 
-    MessageListAdapter messagesAdapter;
-    ListView messagesView;
+    public MessageListAdapter messagesAdapter;
+    public ListView messagesView;
 
     // Parameters for message/reply sending
-    String sendMessage;
-    long sendReference; // ID of the message the user is replying to
-    boolean sendPing;
+    public String sendMessage;
+    public long sendReference; // ID of the message the user is replying to
+    public boolean sendPing;
 
-    boolean isDM;
-    Vector<DirectMessage> directMessages;
-    DirectMessage selectedDm;
+    public boolean isDM;
+    public Vector<DirectMessage> directMessages;
+    public DirectMessage selectedDm;
 
-    int sendHotkey;
-    int replyHotkey;
-    int copyHotkey;
-    int refreshHotkey;
-    int backHotkey;
+    public ExecutorService executor;
+    public Handler handler;
 
     public State(Context c) {
-        subscribedGuilds = new Vector<Guild>();
-        iconCache = new IconCache(this);
-        nameColorCache = new NameColorCache(this);
-        unreads = new UnreadManager(this, c);
+        this.executor = Executors.newFixedThreadPool(10);
+        this.handler = new Handler(Looper.getMainLooper());
+        this.api = new API(this);
+        this.subscribedGuilds = new Vector<Guild>();
+        this.icons = new Icons(this);
+        this.attachments = new Attachments(this);
+        this.guildInformation = new GuildInformation(this);
+        this.unreads = new UnreadManager(this, c);
+        this.guilds = new Vector<Guild>();
+        this.channels = new Vector<Channel>();
+        this.directMessages = new Vector<DirectMessage>();
+        this.messages = new Messages();
     }
 
     public void login(String api, String gateway, String cdn, String token) {
         this.cdn = cdn;
-        http = new HTTPThing(this, api, token);
+        this.http = new HTTP(this, api, token);
+
+        try {
+            JSONObject me = JSON.getObject(this.http.get("/users/@me"));
+            this.myUserId = Long.parseLong(me.getString("id"));
+        } catch (Exception e) {
+            this.error("Error getting user ID: " + e.getMessage());
+            e.printStackTrace();
+        }
 
         if (useGateway) {
             this.gateway = new GatewayThread(this, gateway, token);
             this.gateway.start();
         }
     }
-
-	/*private Alert createError(String message) {
-        Alert error = new Alert("Error");
-		error.setTimeout(Alert.FOREVER);
-		error.setString(message);
-		return error;
-	}*/
 
     public void error(String message) {
         try {
@@ -121,93 +144,16 @@ public class State {
 		}*/
     }
 
-    public void openGuildSelector(boolean reload) {
-		/*try {
-			if (reload || guildSelector == null || guilds == null) {
-				new HTTPThread(this, HTTPThread.FETCH_GUILDS).start();
-			} else {
-				disp.setCurrent(guildSelector);
-			}
-		}
-		catch (Exception e) {
-			error(e.toString());
-		}*/
-    }
-
-    public void openChannelSelector(boolean reload) {
-		/*try {
-			if (!reload && channelSelector != null && channels != null && channels == selectedGuild.channels) {
-				disp.setCurrent(channelSelector);
-			}
-			else if (!reload && selectedGuild.channels != null) {
-				channels = selectedGuild.channels;
-				channelSelector = new ChannelSelector(this);
-				disp.setCurrent(channelSelector);
-			}
-			else {
-				new HTTPThread(this, HTTPThread.FETCH_CHANNELS).start();
-			}
-		}
-		catch (Exception e) {
-			error(e.toString());
-		}*/
-    }
-
-    public void openDMSelector(boolean reload) {
-		/*try {
-			if (reload || dmSelector == null || dmChannels == null) {
-				new HTTPThread(this, HTTPThread.FETCH_DM_CHANNELS).start();
-			} else {
-				disp.setCurrent(dmSelector);
-			}
-		}
-		catch (Exception e) {
-			error(e.toString());
-		}*/
-    }
-
-    public void openChannelView(boolean reload) {
-		/*try {
-			if (oldUI) {
-				if (reload || oldChannelView == null || messages == null) {
-					new HTTPThread(this, HTTPThread.FETCH_MESSAGES).start();
-				} else {
-					disp.setCurrent(oldChannelView);
-				}
-			} else {
-				if (reload || channelView == null || messages == null) {
-					new HTTPThread(this, HTTPThread.FETCH_MESSAGES).start();
-				} else {
-					disp.setCurrent(channelView);
-				}
-			}
-			if (isDM) {
-				unreads.markRead(selectedDmChannel);
-				updateUnreadIndicators(true, selectedDmChannel.id);
-			} else {
-				unreads.markRead(selectedChannel);
-				updateUnreadIndicators(false, selectedChannel.id);
-			}
-		}
-		catch (Exception e) {
-			error(e.toString());
-		}*/
-    }
-
-    public void openAttachmentView(boolean reload, Message msg) {
-		/*try {
-			if (reload || attachmentView == null || attachmentView.msg != msg) {
-				attachmentView = new AttachmentView(this, msg);
-			}
-			disp.setCurrent(attachmentView);
-		}
-		catch (Exception e) {
-			error(e.toString());
-		}*/
-    }
-
     public void platformRequest(String url) {
         Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
         c.startActivity(browserIntent);
+    }
+
+    public void runOnUiThread(Runnable runnable) {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            runnable.run();
+        } else {
+            handler.post(runnable);
+        }
     }
 }

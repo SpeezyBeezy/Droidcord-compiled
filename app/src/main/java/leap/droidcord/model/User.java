@@ -1,35 +1,24 @@
-package leap.droidcord;
-
-import java.util.Vector;
+package leap.droidcord.model;
 
 import cc.nnproject.json.JSONObject;
 
-public class GuildMember implements HasIcon {
-    User user;
-    String username;
-    String name;
-    String nickname;
-    Vector<Role> roles;
-    long permissions;
-    String iconHash;
+import leap.droidcord.State;
+import leap.droidcord.Util;
+
+public class User extends Snowflake implements HasIcon {
+    public String name;
+    public String iconHash;
 
     // For placeholder icon
-    int iconColor;
-    String initials;
+    public int iconColor;
+    public String initials;
 
-    public GuildMember(State s, Guild g, JSONObject data) {
-        user = new User(s, data.getObject("user"));
-        username = data.getString("username", null);
-        name = data.getString("global_name", username);
-        if (data.has("nick")) {
-            nickname = data.getString("nick", null);
-        }
-        if (data.has("roles")) {
-            roles = Role.parseGuildMemberRoles(g, data.getArray("roles"));
-        }
+    public User(State s, JSONObject data) {
+        super(Long.parseLong(data.getString("id")));
 
-        if (s.iconType == State.ICON_TYPE_NONE)
-            return;
+        name = data.getString("global_name", null);
+        if (name == null)
+            name = data.getString("username", "(no name)");
 
         iconHash = data.getString("avatar", null);
 
@@ -50,11 +39,11 @@ public class GuildMember implements HasIcon {
         }
         initials = initialsBuf.toString();
 
-        iconColor = Util.hsvToRgb((int) user.id % 360, 192, 224);
+        iconColor = Util.hsvToRgb((int) id % 360, 192, 224);
     }
 
     public Long getIconID() {
-        return user.id;
+        return id;
     }
 
     public String getIconHash() {

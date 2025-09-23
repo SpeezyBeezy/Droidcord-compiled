@@ -7,6 +7,10 @@ import android.preference.PreferenceManager;
 import java.util.Enumeration;
 import java.util.Hashtable;
 
+import leap.droidcord.model.Channel;
+import leap.droidcord.model.DirectMessage;
+import leap.droidcord.model.Guild;
+
 import cc.nnproject.json.JSON;
 import cc.nnproject.json.JSONArray;
 
@@ -24,10 +28,8 @@ public class UnreadManager {
 
         // Load last read message IDs from RMS (convert JSON to hashtable)
         try {
-            SharedPreferences sp = PreferenceManager
-                    .getDefaultSharedPreferences(c);
-            JSONArray json = JSON.getArray(new String(sp
-                    .getString("unread", "")));
+            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(c);
+            JSONArray json = JSON.getArray(new String(sp.getString("unread", "")));
 
             for (int i = 0; i < json.size(); i++) {
                 JSONArray elem = json.getArray(i);
@@ -58,8 +60,7 @@ public class UnreadManager {
 
         // Write stringified JSON to RMS
         try {
-            SharedPreferences sp = PreferenceManager
-                    .getDefaultSharedPreferences(c);
+            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(c);
             SharedPreferences.Editor editor = sp.edit();
             editor.putString("unread", json.build());
             editor.commit();
@@ -126,14 +127,14 @@ public class UnreadManager {
     }
 
     public void markDMsRead() {
-        /*if (s.dmSelector == null) return;
+        if (s.directMessages == null) return;
 
         autoSave = false;
-        for (int i = 0; i < s.dmSelector.lastDMs.size(); i++) {
-            DMChannel dmCh = (DMChannel) s.dmSelector.lastDMs.elementAt(i);
+        for (int i = 0; i < s.directMessages.size(); i++) {
+            DirectMessage dmCh = (DirectMessage) s.directMessages.elementAt(i);
             markRead(dmCh);
         }
         autoSave = true;
-        save();*/
+        save();
     }
 }

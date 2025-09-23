@@ -1,26 +1,26 @@
-package leap.droidcord;
+package leap.droidcord.model;
 
 import cc.nnproject.json.JSONObject;
+
+import leap.droidcord.State;
 
 public class DirectMessage extends Snowflake implements HasIcon {
     public String name;
     public String username;
     public long lastMessageID;
-    public long iconID; // for groups, group ID. for users, recipient ID (not
-    // DM channel ID)
+    public long iconID; // for groups, group ID. for users, recipient ID (not DM channel ID)
     public String iconHash;
-    boolean isGroup;
+    public boolean isGroup;
 
     public DirectMessage(State s, JSONObject data) {
         super(Long.parseLong(data.getString("id")));
         isGroup = data.getInt("type") == 3;
 
         String msgIdStr = data.getString("last_message_id");
-        if (msgIdStr != null) {
+        if (msgIdStr != null)
             lastMessageID = Long.parseLong(msgIdStr);
-        } else {
+        else
             lastMessageID = id;
-        }
 
         if (isGroup) {
             name = data.getString("name");
@@ -31,11 +31,10 @@ public class DirectMessage extends Snowflake implements HasIcon {
                 JSONObject recipient = data.getArray("recipients").getObject(0);
 
                 name = recipient.getString("global_name", null);
-                if (name == null) {
+                if (name == null)
                     name = recipient.getString("username");
-                } else {
+                else
                     username = recipient.getString("username", null);
-                }
 
                 iconID = Long.parseLong(recipient.getString("id"));
                 iconHash = recipient.getString("avatar");
@@ -46,7 +45,7 @@ public class DirectMessage extends Snowflake implements HasIcon {
             name = "(unknown)";
     }
 
-    static DirectMessage getById(State s, long id) {
+    public static DirectMessage getById(State s, long id) {
         if (s.directMessages == null)
             return null;
 
@@ -58,7 +57,7 @@ public class DirectMessage extends Snowflake implements HasIcon {
         return null;
     }
 
-    public String toString(State s) {
+    public String toString() {
         return name;
     }
 

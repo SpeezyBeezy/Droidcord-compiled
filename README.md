@@ -2,8 +2,8 @@
 A Discord client for old Android <4.x devices. Uses proxy servers for the [HTTP](https://github.com/gtrxAC/discord-j2me/blob/main/proxy) and [gateway](https://github.com/gtrxAC/discord-j2me-server) connection. Currently work-in-progress.
 
 ## How to build
-1. Install Android Studio. I use Android Studio 1.0 (yes the very first one) from 2014 though newer versions probably works fine.
-2. Clone the repository (idk if you can clone a git repo directly from modern Android Studio since I use 1.0 which doesn't have one)
+1. Install Android Studio. I use Android Studio 1.0 though newer versions should work fine.
+2. Clone the repository
 3. Run the project.
 
 ## Status
@@ -11,24 +11,23 @@ A Discord client for old Android <4.x devices. Uses proxy servers for the [HTTP]
 * Logging in
 * Server list
 * Channel list
+* Direct messages and group DMs
 * Message reading
 * Message sending
 * Gateway/live message updates
+* Attachment viewing
 
 ### Not implemented
-* DM list
 * Message editing
 * Message deleting
 * Replying to messages
 * Reading older messages
-* Direct messages and group DMs
-* Attachment viewing
 * Attachment sending
 * Unread message indicators
 * Jumping to messages (e.g. replies)
-* Initiating DM conversations
 * Ping indicators
 * Reactions and emojis
+* Settings
 
 ## Credits
 - [@gtrxac](https://github.com/gtrxAC) for his [Discord J2ME](https://github.com/gtrxAC/discord-j2me) project where most of the code came from.

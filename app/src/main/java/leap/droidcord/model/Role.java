@@ -1,4 +1,4 @@
-package leap.droidcord;
+package leap.droidcord.model;
 
 import java.util.Vector;
 
@@ -23,7 +23,11 @@ public class Role extends Snowflake {
         for (int i = arr.size() - 1; i >= 0; i--) {
             for (int a = arr.size() - 1; a >= 0; a--) {
                 JSONObject data = arr.getObject(i);
+
                 if (data.getInt("position", i) != i)
+                    continue;
+
+                if (data.getInt("color") == 0)
                     continue;
 
                 result.addElement(new Role(data));

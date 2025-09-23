@@ -54,27 +54,21 @@ public class LoginActivity extends Activity {
         mTokenView = (EditText) findViewById(R.id.token);
         mSendTokenAsView = (Spinner) findViewById(R.id.send_token_as);
 
-        mUseGatewayView.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton view, boolean isChecked) {
-                mGatewayUrlView.setEnabled(isChecked);
-            }
+        mUseGatewayView.setOnCheckedChangeListener((CompoundButton view, boolean isChecked) -> {
+            mGatewayUrlView.setEnabled(isChecked);
         });
 
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
-                this,
-                R.array.send_token_as,
-                android.R.layout.simple_spinner_item
+            this,
+            R.array.send_token_as,
+            android.R.layout.simple_spinner_item
         );
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         mSendTokenAsView.setAdapter(adapter);
 
         Button mLoginButton = (Button) findViewById(R.id.login_button);
-        mLoginButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                attemptLogin();
-            }
+        mLoginButton.setOnClickListener((View v) -> {
+            attemptLogin();
         });
     }
 
@@ -180,50 +174,41 @@ public class LoginActivity extends Activity {
 
         @Override
         public Void call() {
-            ExecutorService executor = Executors.newSingleThreadExecutor();
-            final Handler handler = new Handler(Looper.getMainLooper());
-
-            executor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        s.useGateway = mUseGateway;
-                        s.tokenType = mSendTokenAs;
-                        s.login(mApiUrl, mGatewayUrl, mCdnUrl, mToken);
-                        success = true;
-                    } catch (Exception e) {
-                        success = false;
-                        error = e.toString();
-                    }
-
-                    SharedPreferences sp = PreferenceManager
-                            .getDefaultSharedPreferences(mContext);
-                    SharedPreferences.Editor editor = sp.edit();
-                    editor.putString("api", mApiUrl);
-                    editor.putString("cdn", mCdnUrl);
-                    editor.putBoolean("useGateway", mUseGateway);
-                    editor.putString("gateway", mGatewayUrl);
-                    editor.putString("token", mToken);
-                    editor.putInt("tokenType", mSendTokenAs);
-                    editor.putInt("messageLoadCount", 25);
-                    editor.commit();
-
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            mAuthTask = null;
-                            showProgress(false);
-
-                            if (success) {
-                                Intent intent = new Intent(mContext, MainActivity.class);
-                                startActivity(intent);
-                                finish();
-                            } else {
-                                s.error(error);
-                            }
-                        }
-                    });
+            s.executor.execute(() -> {
+                try {
+                    s.useGateway = mUseGateway;
+                    s.tokenType = mSendTokenAs;
+                    s.login(mApiUrl, mGatewayUrl, mCdnUrl, mToken);
+                    success = true;
+                } catch (Exception e) {
+                    success = false;
+                    error = e.toString();
                 }
+
+                SharedPreferences sp = PreferenceManager
+                        .getDefaultSharedPreferences(mContext);
+                SharedPreferences.Editor editor = sp.edit();
+                editor.putString("api", mApiUrl);
+                editor.putString("cdn", mCdnUrl);
+                editor.putBoolean("useGateway", mUseGateway);
+                editor.putString("gateway", mGatewayUrl);
+                editor.putString("token", mToken);
+                editor.putInt("tokenType", mSendTokenAs);
+                editor.putInt("messageLoadCount", 25);
+                editor.commit();
+
+                s.runOnUiThread(() -> {
+                    mAuthTask = null;
+                    showProgress(false);
+
+                    if (success) {
+                        Intent intent = new Intent(mContext, MainActivity.class);
+                        startActivity(intent);
+                        finish();
+                    } else {
+                        s.error(error);
+                    }
+                });
             });
             return null;
         }

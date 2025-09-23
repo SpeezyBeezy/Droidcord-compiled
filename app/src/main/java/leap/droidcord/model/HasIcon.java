@@ -1,4 +1,6 @@
-package leap.droidcord;
+package leap.droidcord.model;
+
+import leap.droidcord.State;
 
 public interface HasIcon {
     public Long getIconID();

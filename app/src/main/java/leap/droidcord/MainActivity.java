@@ -5,120 +5,138 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
+import android.widget.AdapterView;
 import android.widget.ExpandableListAdapter;
 import android.widget.ExpandableListView;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TabHost;
+import android.widget.TabWidget;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import leap.droidcord.model.Channel;
+import leap.droidcord.model.DirectMessage;
+import leap.droidcord.model.Guild;
+import leap.droidcord.ui.DMListAdapter;
+import leap.droidcord.ui.GuildListAdapter;
 
-@SuppressWarnings("deprecation")
+import cc.nnproject.json.JSON;
+import cc.nnproject.json.JSONObject;
+
 public class MainActivity extends TabActivity {
-
     public static State s;
+    private Context mContext;
+
     ExpandableListView mGuildsView;
     ExpandableListAdapter mGuildsAdapter;
+
     ListView mDmsView;
     ListAdapter mDmsAdapter;
-    List<String> guildNames;
-    List<Guild> guildList;
-    private Context context;
+
+    private class LoadInformationRunnable implements Runnable {
+        private final AtomicInteger mLoadCount = new AtomicInteger(0);
+
+        @Override
+        public void run() {
+            s.api.aFetchGuilds(() -> {
+                mGuildsAdapter = new GuildListAdapter(MainActivity.this, mContext, s, s.guilds);
+                s.runOnUiThread(() -> {
+                    mGuildsView.setAdapter(mGuildsAdapter);
+                    if (mLoadCount.incrementAndGet() == 2)
+                        showProgress(false);
+                });
+            });
+
+            s.api.aFetchDirectMessages(() -> {
+                mDmsAdapter = new DMListAdapter(mContext, s, s.directMessages);
+                s.runOnUiThread(() -> {
+                    mDmsView.setAdapter(mDmsAdapter);
+                    if (mLoadCount.incrementAndGet() == 2)
+                        showProgress(false);
+                });
+            });
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         this.requestWindowFeature(Window.FEATURE_PROGRESS);
-        TabHost tabHost = getTabHost();
-        mGuildsView = (ExpandableListView) findViewById(R.id.servers);
+
         s = new State(this);
-        context = this;
+        mContext = this;
 
-        LayoutInflater.from(this).inflate(R.layout.activity_main,
-                tabHost.getTabContentView(), true);
+        TabHost tabHost = getTabHost();
+        LayoutInflater.from(this).inflate(R.layout.activity_main, tabHost.getTabContentView(), true);
+        tabHost.addTab(tabHost.newTabSpec("servers").setIndicator("Servers").setContent(R.id.server_tab));
+        tabHost.addTab(tabHost.newTabSpec("dm").setIndicator("Direct Messages").setContent(R.id.dm_tab));
+        tabHost.addTab(tabHost.newTabSpec("settings").setIndicator("Settings").setContent(R.id.settings_tab));
+
         mGuildsView = (ExpandableListView) findViewById(R.id.servers);
+        mDmsView = (ListView) findViewById(R.id.direct_messages);
 
-        tabHost.addTab(tabHost.newTabSpec("servers").setIndicator("Servers")
-                .setContent(R.id.server_tab));
-        tabHost.addTab(tabHost.newTabSpec("dm").setIndicator("Direct Messages")
-                .setContent(R.id.dm_tab));
-        tabHost.addTab(tabHost.newTabSpec("settings").setIndicator("Settings")
-                .setContent(R.id.settings_tab));
+        TabWidget tabWidget = tabHost.getTabWidget();
+        for (int i = 0; i < tabWidget.getChildCount(); i++) {
+            View tab = tabWidget.getChildAt(i);
+            ViewGroup.LayoutParams params = tab.getLayoutParams();
+            tab.setLayoutParams(params);
+        }
 
-        SharedPreferences sp = PreferenceManager
-                .getDefaultSharedPreferences(this);
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         if (TextUtils.isEmpty(sp.getString("token", null))) {
             Intent intent = new Intent(this, LoginActivity.class);
             startActivity(intent);
             finish();
-        } else {
-            String api_url = sp.getString("api", null);
-            String cdn_url = sp.getString("cdn", null);
-            boolean use_gateway = sp.getBoolean("useGateway", false);
-            String gateway_url = sp.getString("gateway", null);
-            String token = sp.getString("token", null);
-            int token_type = sp.getInt("tokenType", 0);
-            int message_load_count = sp.getInt("messageLoadCount", 0);
-
-            try {
-                s.useGateway = use_gateway;
-                s.tokenType = token_type;
-                s.messageLoadCount = message_load_count;
-                s.login(api_url, gateway_url, cdn_url, token);
-                // FIXME: for some reason making this a thread doesn't fetch the guild list and would just error out with a null pointer exception
-                //new HTTPThread(s, HTTPThread.FETCH_GUILDS).start();
-
-                ExecutorService executor = Executors.newSingleThreadExecutor();
-                final Handler handler = new Handler(Looper.getMainLooper());
-
-                showProgress(true);
-                executor.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        new HTTPThread(s, HTTPThread.FETCH_GUILDS).run();
-                        new HTTPThread(s, HTTPThread.FETCH_DIRECT_MESSAGES).run();
-                        mGuildsAdapter = new GuildListAdapter(context, s, s.guilds);
-                        mDmsAdapter = new DMListAdapter(context, s, s.directMessages);
-
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                showProgress(false);
-                                mGuildsView.setAdapter(mGuildsAdapter);
-                                // FIXME: WHY THE FUCK IS IT NULL I LOADED THE DM ADAPTER PROPERLY WHY THE FUCK DOES IT THINK ITS NULL THE FUCK DID I DO??????
-                                //mDmsView.setAdapter(mDmsAdapter);
-                            }
-                        });
-                    }
-                });
-            } catch (Exception e) {
-                //s.error(e.toString());
-                e.printStackTrace();
-            }
-
-            mGuildsView.setOnChildClickListener(new ExpandableListView.OnChildClickListener() {
-
-                @Override
-                public boolean onChildClick(ExpandableListView parent, View v,
-                                            int groupPosition, int childPosition, long id) {
-                    Intent intent = new Intent(context, ChatActivity.class);
-                    s.selectedGuild = (Guild) mGuildsAdapter.getGroup(groupPosition);
-                    s.selectedChannel = (Channel) mGuildsAdapter.getChild(groupPosition, childPosition);
-                    startActivity(intent);
-                    return true;
-                }
-
-            });
+            return;
         }
+
+        String apiUrl = sp.getString("api", null);
+        String cdnUrl = sp.getString("cdn", null);
+        boolean use_gateway = sp.getBoolean("useGateway", false);
+        String gatewayUrl = sp.getString("gateway", null);
+        String token = sp.getString("token", null);
+        int token_type = sp.getInt("tokenType", 0);
+        int msgLoadCount = sp.getInt("messageLoadCount", 0);
+
+        try {
+            s.useGateway = use_gateway;
+            s.tokenType = token_type;
+            s.messageLoadCount = msgLoadCount;
+            s.login(apiUrl, gatewayUrl, cdnUrl, token);
+
+            showProgress(true);
+            s.executor.execute(new LoadInformationRunnable());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        mGuildsView.setOnChildClickListener((ExpandableListView parent, View v,
+                                             int groupPosition, int childPosition,
+                                             long id) -> {
+            Intent intent = new Intent(mContext, ChatActivity.class);
+            s.isDM = false;
+            s.selectedDm = null;
+            s.selectedGuild = (Guild) mGuildsAdapter.getGroup(groupPosition);
+            s.selectedChannel = (Channel) mGuildsAdapter.getChild(groupPosition, childPosition);
+            startActivity(intent);
+            return true;
+        });
+
+        mDmsView.setOnItemClickListener((AdapterView<?> parent, View v, int position,
+                                         long id) -> {
+            Intent intent = new Intent(mContext, ChatActivity.class);
+            s.isDM = true;
+            s.selectedDm = (DirectMessage) mDmsAdapter.getItem(position);
+            s.selectedGuild = null;
+            s.selectedChannel = null;
+            startActivity(intent);
+        });
     }
 
     public void showProgress(final boolean show) {

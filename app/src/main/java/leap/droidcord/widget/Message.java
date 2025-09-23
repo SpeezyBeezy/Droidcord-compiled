@@ -1,4 +1,4 @@
-package leap.droidcord.ui;
+package leap.droidcord.widget;
 
 import android.content.Context;
 import android.util.AttributeSet;

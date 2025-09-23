@@ -1,4 +1,4 @@
-package leap.droidcord;
+package leap.droidcord.model;
 
 import cc.nnproject.json.JSONObject;
 

@@ -1,4 +1,4 @@
-package leap.droidcord;
+package leap.droidcord.model;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -7,10 +7,11 @@ import java.util.Vector;
 import cc.nnproject.json.JSONArray;
 import cc.nnproject.json.JSONObject;
 
+import leap.droidcord.State;
+
 public class Message extends Snowflake {
     static final int TYPE_ADDED = 1; // user added another user to group DM
-    static final int TYPE_REMOVED = 2; // user left (or was removed) from group
-    // DM
+    static final int TYPE_REMOVED = 2; // user left (or was removed) from group DM
     static final int TYPE_CALL = 3;
     static final int TYPE_CHANNEL_NAME_CHANGE = 4; // changed name of group DM
     static final int TYPE_CHANNEL_ICON_CHANGE = 5;
@@ -25,7 +26,6 @@ public class Message extends Snowflake {
     public String timestamp;
     public String content;
     public String rawContent;
-    public String[] contentLines;
 
     // is status message? (user joined/left/boosted) - affects rendering
     public boolean isStatus;
@@ -38,7 +38,7 @@ public class Message extends Snowflake {
     public boolean showAuthor;
 
     public boolean needUpdate; // does this message's contentlines need to be
-    // updated before next draw
+                               // updated before next draw
 
     public Message(State s, JSONObject data) {
         super(Long.parseLong(data.getString("id")));
@@ -225,6 +225,9 @@ public class Message extends Snowflake {
      * @return true if author should be shown, false if messages are "merged"
      */
     public boolean shouldShowAuthor(Message above, long clusterStart) {
+        if (above == null || clusterStart == 0)
+            return true;
+
         // Different authors -> true
         if (!(above.author.id == author.id))
             return true;

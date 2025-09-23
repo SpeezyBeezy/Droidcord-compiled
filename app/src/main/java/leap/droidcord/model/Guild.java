@@ -1,13 +1,16 @@
-package leap.droidcord;
+package leap.droidcord.model;
 
 import java.util.Vector;
 
+import leap.droidcord.State;
+
+import cc.nnproject.json.JSON;
 import cc.nnproject.json.JSONObject;
 
 public class Guild extends Snowflake implements HasIcon {
     public String name;
     public long ownerId;
-    public User me;
+    public GuildMember me;
     public long myPermissions;
     public Vector<Channel> channels;
     public Vector<Role> roles;
@@ -52,7 +55,7 @@ public class Guild extends Snowflake implements HasIcon {
     }
 
     public long computeBasePermissions(GuildMember member) {
-        if (member.user.id == ownerId) {
+        if (member.id == ownerId) {
             return Permissions.ALL;
         }
 

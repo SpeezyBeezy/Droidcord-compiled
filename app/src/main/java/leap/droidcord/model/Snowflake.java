@@ -1,4 +1,4 @@
-package leap.droidcord;
+package leap.droidcord.model;
 
 public class Snowflake {
     public static final long EPOCH = 1420070400000L;

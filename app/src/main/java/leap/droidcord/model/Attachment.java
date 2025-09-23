@@ -1,4 +1,7 @@
-package leap.droidcord;
+package leap.droidcord.model;
+
+import leap.droidcord.State;
+import leap.droidcord.Util;
 
 import android.content.res.Resources;
 
@@ -8,9 +11,11 @@ public class Attachment {
     private static final String[] nonTextFormats = {".zip", ".rar", ".7z",
             ".exe", ".jar", ".apk", ".sis", ".sisx", ".bin", ".mp3", ".wav",
             ".ogg", ".m4a", ".amr", ".flac", ".mid", ".mmf", ".mp4", ".3gp"};
+
     public String url;
     public String previewUrl;
     public String name;
+    public String mimeType;
     public int size;
     public boolean supported;
     public boolean isText;
@@ -18,10 +23,10 @@ public class Attachment {
     public Attachment(State s, JSONObject data) {
         String proxyUrl = data.getString("proxy_url");
 
-        url = s.cdn
-                + proxyUrl.substring("https://media.discordapp.net".length());
+        url = s.cdn + proxyUrl.substring("https://media.discordapp.net".length());
 
         name = data.getString("filename", "Unnamed file");
+        mimeType = data.getString("content_type", "text/plain");
         size = data.getInt("size", 0);
 
         // Attachments that aren't images or videos are unsupported
@@ -43,13 +48,13 @@ public class Attachment {
         int screenWidth = Resources.getSystem().getDisplayMetrics().widthPixels;
         int screenHeight = Resources.getSystem().getDisplayMetrics().heightPixels;
 
-        int[] size = Util.resizeFit(imageWidth, imageHeight, screenWidth,
-                screenHeight);
+        /*int[] size = Util.resizeFit(imageWidth, imageHeight, screenWidth,
+                screenHeight);*/
 
         // Preview url is not using our own proxy, because media.discordapp.net
         // works over http
         previewUrl = "http://" + proxyUrl.substring("https://".length())
-                + "format=" + (s.useJpeg ? "jpeg" : "png") + "&width="
-                + size[0] + "&height=" + size[1];
+                + "format=" + (s.useJpeg ? "jpeg" : "png") /*+ "&width="
+                + size[0] + "&height=" + size[1]*/ + "&width=" + screenWidth;
     }
 }
